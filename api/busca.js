@@ -11,7 +11,6 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Digite pelo menos 2 caracteres.' });
   }
 
-  // Rate limit básico por IP (memória — reseta a cada deploy)
   if (!global._rl) global._rl = {};
   const ip = req.headers['x-forwarded-for'] || 'unknown';
   const now = Date.now();
@@ -24,17 +23,20 @@ export default async function handler(req, res) {
   }
 
   try {
-    const url = 'https://servicos.busca.inpi.gov.br/api/v2/marcas/pesquisa?' +
-      new URLSearchParams({ term: termo.trim(), start: 0, rows: 20 });
+    const url = 'https://pi-api-dev.ibict.br/api/trademarks/search';
 
     const upstream = await fetch(url, {
+      method: 'POST',
       headers: {
         'Accept': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (compatible; VerificaMarca/1.0)',
-        'Referer': 'https://servicos.busca.inpi.gov.br/marcas',
-        'Origin': 'https://servicos.busca.inpi.gov.br',
+        'Content-Type': 'application/json',
       },
-      signal: AbortSignal.timeout(12_000),
+      body: JSON.stringify({
+        query: termo.trim(),
+        page: 0,
+        size: 20,
+      }),
+      signal: AbortSignal.timeout(15_000),
     });
 
     if (!upstream.ok) {
@@ -42,8 +44,29 @@ export default async function handler(req, res) {
     }
 
     const data = await upstream.json();
+
+    const hits = (data.results || []).map(r => ({
+      _source: {
+        nomeMarca: r.mark_name?.raw || '',
+        descricaoSituacao: r.status?.raw || '',
+        descricaoNatureza: r.nature_text?.raw || '',
+        nomeTitular: r.holders?.raw?.[0]?.name || '',
+        dataDeposito: r.filing_date?.raw ? r.filing_date.raw.split('T')[0] : '',
+        dataVigencia: r.validity_date?.raw ? r.validity_date.raw.split('T')[0] : '',
+        numeroProcesso: r.process_number?.raw || '',
+        apresentacao: r.presentation_text?.raw || '',
+      },
+    }));
+
+    const result = {
+      hits: {
+        hits,
+        total: { value: data.totalResults || hits.length },
+      },
+    };
+
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
-    return res.status(200).json(data);
+    return res.status(200).json(result);
 
   } catch (err) {
     if (err.name === 'TimeoutError') {
