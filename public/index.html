@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verifica Marca — Consulta INPI</title>
+  <meta name="description" content="Verifique se o nome do seu produto ou empresa está disponível para registro de marca no INPI." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:            #F5F5F3;
+      --surface:       #FFFFFF;
+      --border:        #E2E1DE;
+      --border-strong: #C8C7C3;
+      --text:          #1A1A18;
+      --text-2:        #5C5B58;
+      --text-3:        #9B9A97;
+      --accent:        #2563EB;
+
+      --green-bg:     #EAFAF1;
+      --green-border: #6BCF98;
+      --green-text:   #14532D;
+      --green-badge:  #DCFCE7;
+
+      --yellow-bg:     #FFFBEB;
+      --yellow-border: #FCD34D;
+      --yellow-text:   #78350F;
+      --yellow-badge:  #FEF9C3;
+
+      --red-bg:      #FEF2F2;
+      --red-border:  #FCA5A5;
+      --red-text:    #7F1D1D;
+      --red-badge:   #FEE2E2;
+
+      --gray-badge: #F1F0EE;
+      --gray-text:  #5C5B58;
+
+      --radius: 10px;
+      --font: 'Inter', -apple-system, sans-serif;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 3rem 1.25rem 5rem;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 2.5rem;
+    }
+    .logo {
+      width: 34px; height: 34px;
+      background: var(--text);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .logo svg { width: 18px; height: 18px; }
+    .site-name { font-size: 16px; font-weight: 600; letter-spacing: -.02em; }
+    .site-sub  { font-size: 13px; color: var(--text-3); margin-left: auto; }
+
+    /* ── Hero ── */
+    .hero { margin-bottom: 2rem; }
+    .hero h1 {
+      font-size: clamp(26px, 5vw, 36px);
+      font-weight: 600;
+      letter-spacing: -.03em;
+      line-height: 1.2;
+      margin-bottom: 10px;
+    }
+    .hero h1 em { font-style: normal; color: var(--text-3); }
+    .hero p { font-size: 15px; color: var(--text-2); line-height: 1.65; max-width: 520px; }
+
+    /* ── Search card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .search-row { display: flex; gap: 8px; margin-bottom: 12px; }
+
+    input[type=text] {
+      flex: 1;
+      height: 46px;
+      padding: 0 14px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      font: 15px var(--font);
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    input[type=text]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+    }
+    input[type=text]::placeholder { color: var(--text-3); }
+
+    button {
+      height: 46px;
+      padding: 0 20px;
+      border: none;
+      border-radius: var(--radius);
+      background: var(--text);
+      color: #fff;
+      font: 500 14px var(--font);
+      cursor: pointer;
+      display: flex; align-items: center; gap: 7px;
+      transition: background .15s, transform .1s;
+      white-space: nowrap;
+    }
+    button:hover:not(:disabled) { background: #333; }
+    button:active:not(:disabled) { transform: scale(.98); }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+
+    .note {
+      font-size: 12px;
+      color: var(--text-3);
+      line-height: 1.5;
+    }
+    .note a { color: var(--accent); text-decoration: none; }
+    .note a:hover { text-decoration: underline; }
+
+    /* ── Loading ── */
+    .loading {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1rem;
+    }
+    .loading.on { display: flex; }
+    .spin {
+      width: 20px; height: 20px;
+      border: 2px solid var(--border-strong);
+      border-top-color: var(--text);
+      border-radius: 50%;
+      flex-shrink: 0;
+      animation: spin .65s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading p { font-size: 14px; color: var(--text-2); }
+
+    /* ── Error ── */
+    .erro {
+      display: none;
+      background: var(--red-bg);
+      border: 1px solid var(--red-border);
+      border-radius: 14px;
+      padding: 1rem 1.25rem;
+      color: var(--red-text);
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 1rem;
+    }
+    .erro.on { display: block; }
+
+    /* ── Results ── */
+    .results { display: none; }
+    .results.on { display: block; }
+
+    /* Verdict */
+    .verdict {
+      border-radius: 14px;
+      border: 1px solid;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .verdict.safe    { background: var(--green-bg);  border-color: var(--green-border); }
+    .verdict.warning { background: var(--yellow-bg); border-color: var(--yellow-border); }
+    .verdict.danger  { background: var(--red-bg);    border-color: var(--red-border); }
+
+    .verdict-row { display: flex; gap: 14px; align-items: flex-start; }
+    .verdict-icon { font-size: 28px; line-height: 1; flex-shrink: 0; }
+
+    .verdict-pill {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      padding: 3px 9px;
+      border-radius: 99px;
+      margin-bottom: 6px;
+    }
+    .safe    .verdict-pill { background: var(--green-badge);  color: var(--green-text);  }
+    .warning .verdict-pill { background: var(--yellow-badge); color: var(--yellow-text); }
+    .danger  .verdict-pill { background: var(--red-badge);    color: var(--red-text);    }
+
+    .verdict-title   { font-size: 17px; font-weight: 600; letter-spacing: -.02em; margin-bottom: 5px; line-height: 1.3; }
+    .verdict-summary { font-size: 14px; color: var(--text-2); line-height: 1.65; }
+
+    /* Stats */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 1rem;
+    }
+    .stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+    }
+    .stat-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .05em; color: var(--text-3); margin-bottom: 4px; }
+    .stat-value { font-size: 15px; font-weight: 600; line-height: 1.3; }
+
+    /* Registros */
+    .registros-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    .registros-header {
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--text-3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .registros-header span { font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 12px; }
+
+    .reg-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .reg-item:last-child { border-bottom: none; }
+
+    .reg-badge {
+      flex-shrink: 0;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      padding: 3px 7px;
+      border-radius: 5px;
+      margin-top: 2px;
+      white-space: nowrap;
+    }
+    .b-ativo    { background: var(--green-badge);  color: var(--green-text);  }
+    .b-pendente { background: var(--yellow-badge); color: var(--yellow-text); }
+    .b-extinto  { background: var(--gray-badge);   color: var(--gray-text);   }
+
+    .reg-nome { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+    .reg-meta { font-size: 12px; color: var(--text-3); line-height: 1.5; }
+
+    .reg-vazio {
+      padding: 1.5rem;
+      font-size: 14px;
+      color: var(--text-3);
+      text-align: center;
+    }
+
+    /* Passos */
+    .passos {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.125rem 1.375rem;
+      margin-bottom: 1.25rem;
+    }
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--text-3);
+      margin-bottom: 10px;
+    }
+    .passo-item {
+      display: flex;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--text-2);
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+    .passo-item:last-child { margin-bottom: 0; }
+    .passo-num {
+      flex-shrink: 0;
+      width: 20px; height: 20px;
+      background: var(--bg);
+      border: 1px solid var(--border-strong);
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-3);
+      display: flex; align-items: center; justify-content: center;
+      margin-top: 2px;
+    }
+    .passo-item a { color: var(--accent); text-decoration: none; }
+    .passo-item a:hover { text-decoration: underline; }
+
+    .source {
+      font-size: 12px;
+      color: var(--text-3);
+      text-align: center;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+    .source a { color: var(--accent); text-decoration: none; }
+    .source a:hover { text-decoration: underline; }
+
+    /* Footer */
+    footer {
+      margin-top: 4rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--text-3);
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+    footer a { color: var(--text-3); text-decoration: none; }
+    footer a:hover { color: var(--text-2); }
+
+    @media (max-width: 520px) {
+      .wrap { padding: 1.5rem 1rem 4rem; }
+      .search-row { flex-direction: column; }
+      button { width: 100%; justify-content: center; }
+      .site-sub { display: none; }
+      .stats { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 18 18" fill="none">
+        <circle cx="9" cy="9" r="7.5" stroke="white" stroke-width="1.4"/>
+        <path d="M6 9l2.2 2.2L12 7" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <span class="site-name">Verifica Marca</span>
+    <span class="site-sub">Dados direto do INPI</span>
+  </header>
+
+  <div class="hero">
+    <h1>Seu nome pode<br/><em>virar marca?</em></h1>
+    <p>Busca direto na base pública do INPI e mostra os resultados em linguagem simples — sem precisar entender burocracia.</p>
+  </div>
+
+  <div class="card">
+    <div class="search-row">
+      <input
+        id="inp"
+        type="text"
+        placeholder="Ex: Nuvem, Mercado, Zap, Petz..."
+        maxlength="80"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button id="btn" onclick="buscar()">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <circle cx="6.5" cy="6.5" r="4.5" stroke="white" stroke-width="1.5"/>
+          <path d="M10 10L13.5 13.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Verificar
+      </button>
+    </div>
+    <p class="note">
+      Consulta a base pública do INPI em tempo real.
+      Não substitui consulta com advogado especializado em propriedade intelectual.
+      Acesso oficial: <a href="https://servicos.busca.inpi.gov.br/marcas" target="_blank" rel="noopener">servicos.busca.inpi.gov.br</a>
+    </p>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spin"></div>
+    <p>Consultando a base do INPI...</p>
+  </div>
+
+  <div class="erro" id="erro"></div>
+
+  <div class="results" id="results">
+
+    <div class="verdict" id="verdict">
+      <div class="verdict-row">
+        <div class="verdict-icon" id="v-icon"></div>
+        <div style="flex:1">
+          <div class="verdict-pill" id="v-pill"></div>
+          <div class="verdict-title"   id="v-title"></div>
+          <div class="verdict-summary" id="v-summary"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Total encontrado</div>
+        <div class="stat-value" id="s-total">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Registros ativos</div>
+        <div class="stat-value" id="s-ativos">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Em análise</div>
+        <div class="stat-value" id="s-pendentes">—</div>
+      </div>
+    </div>
+
+    <div class="registros-card">
+      <div class="registros-header">
+        Registros encontrados no INPI
+        <span id="reg-count"></span>
+      </div>
+      <div id="reg-list"></div>
+    </div>
+
+    <div class="passos">
+      <div class="section-label">O que fazer agora</div>
+      <div id="passos-list"></div>
+    </div>
+
+    <div class="source">
+      Dados em tempo real da base pública do INPI ·
+      <a href="https://servicos.busca.inpi.gov.br/marcas" target="_blank" rel="noopener">Verificar no sistema oficial ↗</a>
+    </div>
+
+  </div>
+
+  <footer>
+    <span>Verifica Marca — consulta INPI simplificada</span>
+    <a href="https://servicos.busca.inpi.gov.br/marcas" target="_blank" rel="noopener">INPI oficial ↗</a>
+  </footer>
+
+</div>
+<script>
+  const $ = id => document.getElementById(id);
+
+  document.getElementById('inp').addEventListener('keydown', e => {
+    if (e.key === 'Enter') buscar();
+  });
+
+  function setLoading(on) {
+    $('loading').classList.toggle('on', on);
+    $('btn').disabled = on;
+    if (on) {
+      $('results').classList.remove('on');
+      $('erro').classList.remove('on');
+    }
+  }
+
+  function showErro(msg) {
+    $('erro').textContent = msg;
+    $('erro').classList.add('on');
+  }
+
+  function esc(s) {
+    return String(s || '')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Classifica situação em: ativo | pendente | extinto
+  function classificar(situacao) {
+    const s = (situacao || '').toLowerCase();
+    if (
+      s.includes('vigor') || s.includes('concedido') ||
+      s.includes('deferido') || s.includes('registrado') || s.includes('ativo')
+    ) return 'ativo';
+    if (
+      s.includes('pedido') || s.includes('andamento') ||
+      s.includes('exame') || s.includes('publicado') ||
+      s.includes('aguardando') || s.includes('recurso') || s.includes('oposição')
+    ) return 'pendente';
+    return 'extinto';
+  }
+
+  function badgeHtml(tipo) {
+    const map = {
+      ativo:    ['b-ativo',    'Ativo'],
+      pendente: ['b-pendente', 'Em análise'],
+      extinto:  ['b-extinto',  'Encerrado'],
+    };
+    const [cls, label] = map[tipo] || map.extinto;
+    return `<span class="reg-badge ${cls}">${label}</span>`;
+  }
+
+  // Decide o veredito com base nos dados reais
+  function avaliar(hits, total, termo) {
+    const ativos    = hits.filter(h => classificar((h._source||h).descricaoSituacao) === 'ativo');
+    const pendentes = hits.filter(h => classificar((h._source||h).descricaoSituacao) === 'pendente');
+
+    // Verifica se algum ativo tem nome exatamente igual (case-insensitive)
+    const exato = ativos.some(h => {
+      const nome = ((h._source||h).nomeMarca || '').toLowerCase().trim();
+      return nome === termo.toLowerCase().trim();
+    });
+
+    if (total === 0) {
+      return {
+        risk: 'safe',
+        icon: '✅',
+        pill: 'Nome disponível',
+        title: `"${termo}" não encontrado na base do INPI`,
+        summary: 'Nenhum registro de marca com esse nome foi encontrado. O caminho está livre para iniciar o pedido de registro.',
+        passos: [
+          { txt: 'Confirme no sistema oficial do INPI antes de prosseguir.', link: { label: 'Busca oficial', url: 'https://servicos.busca.inpi.gov.br/marcas' } },
+          { txt: 'Acesse o e-INPI para solicitar o registro da sua marca.', link: { label: 'e-INPI', url: 'https://www.gov.br/inpi/pt-br/servicos/marcas/e-marcas' } },
+          { txt: 'Consulte um advogado especializado para garantir que o pedido está correto.' },
+        ]
+      };
+    }
+
+    if (exato && ativos.length > 0) {
+      return {
+        risk: 'danger',
+        icon: '🚫',
+        pill: 'Alto risco de conflito',
+        title: `"${termo}" já está registrado como marca ativa`,
+        summary: `Existe ao menos um registro ativo com esse nome exato no INPI. Usar este nome pode gerar processo por violação de marca. Consulte um advogado antes de qualquer decisão.`,
+        passos: [
+          { txt: 'Verifique os detalhes do registro para entender o segmento e titular.', link: { label: 'Ver no INPI', url: `https://servicos.busca.inpi.gov.br/marcas` } },
+          { txt: 'Considere alterar o nome ou criar uma variação suficientemente distinta.' },
+          { txt: 'Consulte um advogado especializado em propriedade intelectual para avaliar o risco real.' },
+        ]
+      };
+    }
+
+    if (ativos.length > 0 || pendentes.length > 0) {
+      return {
+        risk: 'warning',
+        icon: '⚠️',
+        pill: 'Atenção necessária',
+        title: `Existem marcas similares com "${termo}" no INPI`,
+        summary: `Foram encontrados ${ativos.length} registro(s) ativo(s) e ${pendentes.length} em análise com nomes relacionados. O risco depende do segmento de atuação e da similaridade com sua marca.`,
+        passos: [
+          { txt: 'Analise os registros abaixo: se forem de segmentos diferentes do seu, o risco é menor.' },
+          { txt: 'Faça uma busca mais detalhada no sistema oficial, filtrando por classe de produto/serviço.', link: { label: 'Busca oficial', url: 'https://servicos.busca.inpi.gov.br/marcas' } },
+          { txt: 'Consulte um advogado especializado antes de registrar ou usar o nome comercialmente.' },
+        ]
+      };
+    }
+
+    // Só extintos
+    return {
+      risk: 'safe',
+      icon: '✅',
+      pill: 'Provavelmente disponível',
+      title: `Só registros encerrados com "${termo}"`,
+      summary: `Os ${total} resultado(s) encontrado(s) são de marcas extintas ou canceladas. Em geral isso significa que o nome está livre, mas vale confirmar no sistema oficial.`,
+      passos: [
+        { txt: 'Confirme no sistema oficial, filtrando por "em vigor" para ter certeza.', link: { label: 'Busca oficial', url: 'https://servicos.busca.inpi.gov.br/marcas' } },
+        { txt: 'Se tudo ok, acesse o e-INPI para solicitar o registro.', link: { label: 'e-INPI', url: 'https://www.gov.br/inpi/pt-br/servicos/marcas/e-marcas' } },
+        { txt: 'Consulte um advogado para garantir que não há impedimentos não listados na busca.' },
+      ]
+    };
+  }
+
+  async function buscar() {
+    const termo = $('inp').value.trim();
+    if (!termo) { $('inp').focus(); return; }
+
+    setLoading(true);
+
+    try {
+      const res = await fetch(`/api/busca?termo=${encodeURIComponent(termo)}`);
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
+
+      render(termo, data);
+    } catch (e) {
+      setLoading(false);
+      showErro(e.message || 'Erro inesperado. Tente novamente.');
+    }
+  }
+
+  function render(termo, data) {
+    setLoading(false);
+
+    const hits  = data?.hits?.hits || [];
+    const total = data?.hits?.total?.value ?? data?.totalHits ?? hits.length;
+
+    const ativos    = hits.filter(h => classificar((h._source||h).descricaoSituacao) === 'ativo').length;
+    const pendentes = hits.filter(h => classificar((h._source||h).descricaoSituacao) === 'pendente').length;
+
+    const v = avaliar(hits, total, termo);
+
+    // Verdict
+    $('verdict').className = 'verdict ' + v.risk;
+    $('v-icon').textContent    = v.icon;
+    $('v-pill').textContent    = v.pill;
+    $('v-title').textContent   = v.title;
+    $('v-summary').textContent = v.summary;
+
+    // Stats
+    $('s-total').textContent    = total;
+    $('s-ativos').textContent   = ativos;
+    $('s-pendentes').textContent = pendentes;
+
+    // Registros
+    $('reg-count').textContent = hits.length < total
+      ? `mostrando ${hits.length} de ${total}`
+      : `${hits.length} resultado${hits.length !== 1 ? 's' : ''}`;
+
+    if (hits.length === 0) {
+      $('reg-list').innerHTML = `<div class="reg-vazio">Nenhum registro encontrado com esse nome.</div>`;
+    } else {
+      $('reg-list').innerHTML = hits.map(h => {
+        const s = h._source || h;
+        const nome      = s.nomeMarca || s.nome || '—';
+        const situacao  = s.descricaoSituacao || s.situacao || '—';
+        const titular   = s.nomeTitular || s.titular || '';
+        const natureza  = s.descricaoNatureza || '';
+        const deposito  = s.dataDeposito || '';
+        const vigencia  = s.dataVigencia || '';
+        const tipo      = classificar(situacao);
+
+        const meta = [situacao, titular, natureza, deposito ? `Depósito: ${deposito}` : '', vigencia ? `Vigência: ${vigencia}` : '']
+          .filter(Boolean).join(' · ');
+
+        return `<div class="reg-item">
+          ${badgeHtml(tipo)}
+          <div>
+            <div class="reg-nome">${esc(nome)}</div>
+            <div class="reg-meta">${esc(meta)}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // Próximos passos
+    $('passos-list').innerHTML = v.passos.map((p, i) => `
+      <div class="passo-item">
+        <div class="passo-num">${i + 1}</div>
+        <div>${esc(p.txt)}${p.link ? ` <a href="${esc(p.link.url)}" target="_blank" rel="noopener">${esc(p.link.label)} ↗</a>` : ''}</div>
+      </div>`
+    ).join('');
+
+    $('results').classList.add('on');
+    $('results').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+</script>
+</body>
+</html>
